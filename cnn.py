@@ -25,20 +25,14 @@ if __name__ == "__main__":
         image_size=(img_height, img_width),
         batch_size=batch_size)
 
-    # class_names = train_ds.class_names
-    print(train_ds)
-    # print(class_names)
+    class_names = train_ds.class_names
 
-   
-    def process(image, label):
-        image = tf.cast(image/255., tf.float32)
-        return image, label
+    print(class_names[0])
+    images = train_ds.take(1)
+    y = [y for x, y in train_ds]
+    print(y)
 
-    train_ds = train_ds.map(process)
 
-    for images, labels in train_ds.take(1):
-        print(images.shape)
-        print(images[0])
 # print(class_names_val)
 
 # plt.figure(figsize=(10, 10))
