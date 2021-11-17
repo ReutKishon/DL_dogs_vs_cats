@@ -7,17 +7,13 @@ from tqdm import tqdm
 import random
 
 
-tf.compat.v1.disable_eager_execution()
-tf.disable_v2_behavior()
-
-
 DATADIR = "./dataset/training_set"
 
 CATEGORIES = ["Dog", "Cat"]
 
 
 training_data = []
-IMG_SIZE = 50
+IMG_SIZE = 28
 
 
 def create_training_data():
@@ -61,4 +57,3 @@ pickle_out.close()
 pickle_out = open("y.pickle", "wb")
 pickle.dump(y, pickle_out)
 pickle_out.close()
-
