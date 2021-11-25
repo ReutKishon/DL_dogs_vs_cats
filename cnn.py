@@ -1,11 +1,8 @@
-# Import libraries
+import tensorflow.compat.v1 as tf
 import pickle
 import os
 import numpy as np
-import tensorflow.compat.v1 as tf
-from tensorflow.keras import optimizers
-tf.compat.v1.disable_eager_execution()
-
+tf.disable_v2_behavior()
 
 X = pickle.load(open("X.pickle", "rb"))
 
@@ -14,54 +11,53 @@ Y = pickle.load(open("y.pickle", "rb"))
 
 X = X/255.0
 
-
-n_classes = 2
-batch_size = 128
-
-x = tf.compat.v1.placeholder('float', [None, 784])
-y = tf.compat.v1.placeholder('float', shape=(128,))
+x = tf.placeholder(tf.float32, shape=[50, 784])
+y_ = tf.placeholder(tf.float32, shape=[50, 2])
 
 
-keep_rate = 0.8
-keep_prob = tf.compat.v1.placeholder(tf.float32)
+def weight_variable(shape):
+    initial = tf.truncated_normal(shape, stddev=0.1)
+    return tf.Variable(initial)
+
+
+def bias_variable(shape):
+    initial = tf.constant(0.1, shape=shape)
+    return tf.Variable(initial)
 
 
 def conv2d(x, W):
     return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
 
 
-def maxpool2d(x):
-    #                        size of window         movement of window
-    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME')
+def max_pool_2x2(x):
+    return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
+                          strides=[1, 2, 2, 1], padding='SAME')
 
 
-def convolutional_neural_network(x):
+W_conv1 = weight_variable([5, 5, 1, 32])
+b_conv1 = bias_variable([32])
+x_image = tf.reshape(x, [-1, 28, 28, 1])
+h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
+h_pool1 = max_pool_2x2(h_conv1)
 
-    weights = {'W_conv1': tf.Variable(tf.random.normal([5, 5, 1, 32])),
-               'W_conv2': tf.Variable(tf.random.normal([5, 5, 32, 64])),
-               'W_fc': tf.Variable(tf.random.normal([7*7*64, 1024])),
-               'out': tf.Variable(tf.random.normal([1024, n_classes]))}
 
-    biases = {'b_conv1': tf.Variable(tf.random.normal([32])),
-              'b_conv2': tf.Variable(tf.random.normal([64])),
-              'b_fc': tf.Variable(tf.random.normal([1024])),
-              'out': tf.Variable(tf.random.normal([n_classes]))}
-    x = tf.reshape(x, shape=[-1, 28, 28, 1])
+W_conv2 = weight_variable([5, 5, 32, 64])
+b_conv2 = bias_variable([64])
+h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+h_pool2 = max_pool_2x2(h_conv2)
 
-    conv1 = tf.nn.relu(conv2d(x, weights['W_conv1']) + biases['b_conv1'])
-    conv1 = maxpool2d(conv1)
+W_fc1 = weight_variable([7 * 7 * 64, 1024])
+b_fc1 = bias_variable([1024])
+h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
+h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
-    conv2 = tf.nn.relu(
-        conv2d(conv1, weights['W_conv2']) + biases['b_conv2'])
-    conv2 = maxpool2d(conv2)
+keep_prob = tf.placeholder(tf.float32)
+h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
 
-    fc = tf.reshape(conv2, [-1, 7*7*64])
-    fc = tf.nn.relu(tf.matmul(fc, weights['W_fc'])+biases['b_fc'])
-    fc = tf.nn.dropout(fc, keep_rate)
+W_fc2 = weight_variable([1024, 2])
+b_fc2 = bias_variable([2])
 
-    output = tf.matmul(fc, weights['out'])+biases['out']
-
-    return output
+y_conv = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
 
 
 def next_batch(num):
@@ -74,61 +70,34 @@ def next_batch(num):
     data_shuffle = [X[i] for i in idx_arr]
     labels_shuffle = [Y[i] for i in idx_arr]
 
-    return np.asarray(data_shuffle), np.asarray(labels_shuffle)
+    data = np.asarray(data_shuffle)
+    data = data.reshape(50, 784)
+    labels = np.asarray(labels_shuffle)
+
+    return data, labels
 
 
-# def cost1():
-#     prediction = convolutional_neural_network(x=x)
-#     print(prediction)
+cross_entropy = tf.reduce_mean(
+    tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y_conv))
+train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
+correct_prediction = tf.equal(tf.argmax(y_conv, 1), tf.argmax(y_, 1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-#     return tf.math.reduce_mean(
-#         tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=prediction))
-
-
-def train_neural_network():
-    prediction = convolutional_neural_network(x=x)
-    print(prediction.eval)
-
-    cost = tf.math.reduce_mean(
-        tf.nn.softmax_cross_entropy_with_logits(labels=y, logits=prediction))
-
-    optimizer = tf.train.AdamOptimizer().minimize(loss=cost)
-
-    n_epochs = 10
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-
-        for epoch in range(n_epochs):
-            epoch_loss = 0
-            for _ in range(int(8000/batch_size)):
-                epoch_x, epoch_y = next_batch(batch_size)
-                print("epoch_x")
-
-                print(epoch_x)
-                print("epoch_y")
-
-                print(epoch_y)
-                _, c = sess.run([optimizer, cost], feed_dict={
-                    x: epoch_x, y: epoch_y})
-                epoch_loss += c
-
-            print('Epoch', epoch, 'completed out of',
-                  hm_epochs, 'loss:', epoch_loss)
-
-        # correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
-
-        # accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
-        # print('Accuracy:', accuracy.eval(
-        #     {x: mnist.test.images, y: mnist.test.labels}))
-
-
-# train_neural_network()
-prediction = convolutional_neural_network(x=x)
-# initialize the variable
-init_op = tf.initialize_all_variables()
-
-# run the graph
 with tf.Session() as sess:
-    sess.run(init_op)  # execute init_op
-    # print the random values that we sample
-    print(sess.run(prediction))
+    sess.run(tf.global_variables_initializer())
+    for i in range(20000):
+        batch = next_batch(50)
+        an_array = tf.one_hot(batch[1], 2).eval(session=tf.compat.v1.Session())
+        if i % 100 == 0:
+            train_accuracy = accuracy.eval(feed_dict={
+                x: batch[0], y_: an_array, keep_prob: 1.0})
+            print('step %d, training accuracy %g' % (i, train_accuracy))
+        train_step.run(feed_dict={x: batch[0], y_: an_array, keep_prob: 0.5})
+
+    # print('test accuracy %g' % accuracy.eval(feed_dict={
+    #     x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+
+
+batch = next_batch(50)
+res = tf.one_hot(batch[1], 2)
+print(res.eval(session=tf.compat.v1.Session()).shape)
