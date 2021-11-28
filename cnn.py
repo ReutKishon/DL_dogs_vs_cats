@@ -54,14 +54,19 @@ def cnn():
     b_conv2 = bias_variable([64])
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
-    # (37*37)
-    print(h_pool2.shape)
+    # (38*38)
+    
+    W_conv3 = weight_variable([5, 5, 64, 128])
+    b_conv3 = bias_variable([64])
+    h_conv3 = tf.nn.relu(conv2d(h_pool2, W_conv3) + b_conv3)
+    h_pool3 = max_pool_2x2(h_conv3)
+    # (19*19)
+    print(h_pool3)
+    h_pool3_flat = tf.reshape(h_pool3, [-1, 19*19*128])
 
-    h_pool2_flat = tf.reshape(h_pool2, [-1, 38*38*64])
-
-    W_fc1 = weight_variable([38 * 38 * 64, 1024])
+    W_fc1 = weight_variable([19*19*128, 1024])
     b_fc1 = bias_variable([1024])
-    h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+    h_fc1 = tf.nn.relu(tf.matmul(h_pool3_flat, W_fc1) + b_fc1)
 
     h_fc1_drop = tf.nn.dropout(h_fc1, rate=keep_prob)
 
@@ -100,8 +105,8 @@ def train_and_test():
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for i in range(1000):
-            batch = next_batch(50)
+        for i in range(500):
+            batch = next_batch(100)
             labels_one_hot = tf.one_hot(batch[1], 2).eval(
                 session=tf.compat.v1.Session())
             if i % 100 == 0:
