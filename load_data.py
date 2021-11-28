@@ -16,7 +16,7 @@ CATEGORIES = ["Dog", "Cat"]
 training_data = []
 testing_data = []
 
-IMG_SIZE = 28
+IMG_SIZE = 150
 
 
 def create_training_data():
@@ -51,8 +51,11 @@ def create_testing_data():
             try:
                 img_array = cv2.imread(os.path.join(
                     path, img), cv2.IMREAD_GRAYSCALE)  # convert to array
+
                 # resize to normalize data size
                 new_array = cv2.resize(img_array, (IMG_SIZE, IMG_SIZE))
+                # plt.imshow(new_array, cmap='gray')
+                # plt.show()
                 # add this to our training_data
                 testing_data.append([new_array, class_num])
             except Exception as e:  # in the interest in keeping the output clean...
@@ -73,6 +76,7 @@ for features, label in training_data:
     y_train.append(label)
 
 for features, label in testing_data:
+    
     X_test.append(features)
     y_test.append(label)
 
