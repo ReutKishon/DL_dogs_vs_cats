@@ -6,15 +6,16 @@ tf.disable_v2_behavior()
 
 
 X_train = pickle.load(open("X_train.pickle", "rb"))/255.0
-
 Y_train = pickle.load(open("y_train.pickle", "rb"))
+
 
 X_test = pickle.load(open("X_test.pickle", "rb"))/255.0
 
+
 Y_test = pickle.load(open("y_test.pickle", "rb"))
+print(len(Y_test))
 
-
-x_tensor = tf.placeholder(tf.float32, shape=[None, 784])
+x_tensor = tf.placeholder(tf.float32, shape=[None, 22500])
 y_tensor = tf.placeholder(tf.float32, shape=[None, 2])
 keep_prob = tf.placeholder(tf.float32)
 
@@ -39,20 +40,27 @@ def max_pool_2x2(x):
 
 
 def cnn():
+
     W_conv1 = weight_variable([5, 5, 1, 32])
     b_conv1 = bias_variable([32])
-    x_image = tf.reshape(x_tensor, [-1, 28, 28, 1])
+    # (150*150)
+    x_image = tf.reshape(x_tensor, [-1, 150, 150, 1])
+
     h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
     h_pool1 = max_pool_2x2(h_conv1)
+    # (75*75)
 
     W_conv2 = weight_variable([5, 5, 32, 64])
     b_conv2 = bias_variable([64])
     h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
+    # (37*37)
+    print(h_pool2.shape)
 
-    W_fc1 = weight_variable([7 * 7 * 64, 1024])
+    h_pool2_flat = tf.reshape(h_pool2, [-1, 38*38*64])
+
+    W_fc1 = weight_variable([38 * 38 * 64, 1024])
     b_fc1 = bias_variable([1024])
-    h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
     h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
 
     h_fc1_drop = tf.nn.dropout(h_fc1, rate=keep_prob)
@@ -75,7 +83,8 @@ def next_batch(num):
     labels_shuffle = [Y_train[i] for i in idx_arr]
 
     data = np.asarray(data_shuffle)
-    data = data.reshape(num, 784)
+
+    data = data.reshape(num, 22500)
     labels = np.asarray(labels_shuffle)
 
     return data, labels
@@ -102,7 +111,7 @@ def train_and_test():
             train_step.run(
                 feed_dict={x_tensor: batch[0], y_tensor: labels_one_hot, keep_prob: 0.5})
 
-        test_data = np.asarray(X_test).reshape(2000, 784)
+        test_data = np.asarray(X_test).reshape(2000, 22500)
         test_labels_as_array = np.asarray(Y_test)
         test_labels = tf.one_hot(test_labels_as_array, 2).eval(
             session=tf.compat.v1.Session())
