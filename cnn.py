@@ -4,17 +4,12 @@ import os
 import numpy as np
 tf.disable_v2_behavior()
 
-X_train = pickle.load(open("X_train.pickle", "rb"))
+
 
 X_train = pickle.load(open("X_train.pickle", "rb"))/255.0
 Y_train = pickle.load(open("y_train.pickle", "rb"))
-
-
 X_test = pickle.load(open("X_test.pickle", "rb"))/255.0
-
-
 Y_test = pickle.load(open("y_test.pickle", "rb"))
-print(len(Y_test))
 
 x_tensor = tf.placeholder(tf.float32, shape=[None, 22500])
 y_tensor = tf.placeholder(tf.float32, shape=[None, 2])
