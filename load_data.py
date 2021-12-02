@@ -16,7 +16,7 @@ CATEGORIES = ["Dog", "Cat"]
 training_data = []
 testing_data = []
 
-IMG_SIZE = 150
+IMG_SIZE = 64
 
 
 def create_training_data():
