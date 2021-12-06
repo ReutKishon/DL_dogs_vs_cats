@@ -50,19 +50,23 @@ def cnn():
     b_conv1 = bias_variable([32])
     h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
     h_pool1 = max_pool_2x2(h_conv1)
+    h_pool1_drop = tf.nn.dropout(h_pool1, rate=0.1)
+
 
     W_conv2 = weight_variable([3, 3, 32, 64])
     b_conv2 = bias_variable([64])
-    h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+    h_conv2 = tf.nn.relu(conv2d(h_pool1_drop, W_conv2) + b_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
+    h_pool2_drop = tf.nn.dropout(h_pool2, rate=0.2)
 
-    flat = tf.reshape(h_pool2, [-1, 16*16*64])
-    W_fc1 = weight_variable([16*16*64, 5460])
-    b_fc1 = bias_variable([5460])
+
+    flat = tf.reshape(h_pool2_drop, [-1, 16*16*64])
+    W_fc1 = weight_variable([16*16*64, 5500])
+    b_fc1 = bias_variable([5500])
     h_fc1 = tf.nn.relu(tf.matmul(flat, W_fc1) + b_fc1)
     h_fc1_drop = tf.nn.dropout(h_fc1, rate=keep_prob)
 
-    W_fc2 = weight_variable([5460, 2])
+    W_fc2 = weight_variable([5500, 2])
     b_fc2 = bias_variable([2])
     y_conv = tf.matmul(h_fc1, W_fc2) + b_fc2
     return y_conv
@@ -100,7 +104,7 @@ def train_and_test():
 
         sess.run(tf.global_variables_initializer())
 
-        for i in range(1500):
+        for i in range(10000):
             batch = next_batch(30)
             labels_one_hot = tf.one_hot(batch[1], 2).eval(
                 session=tf.compat.v1.Session())
@@ -112,7 +116,7 @@ def train_and_test():
                       (i, train_accuracy))
 
             train_step.run(
-                feed_dict={x_tensor: batch[0], y_tensor: labels_one_hot, keep_prob: 0.2})
+                feed_dict={x_tensor: batch[0], y_tensor: labels_one_hot, keep_prob: 0.5})
         test_data = np.asarray(X_test).reshape([2000, IMAGE_SIZE*IMAGE_SIZE])
         test_labels_as_array = np.asarray(Y_test)
         test_labels = tf.one_hot(test_labels_as_array, 2).eval(
